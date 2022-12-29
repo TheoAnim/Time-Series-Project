@@ -362,13 +362,6 @@ AIC      63450.92    58627.91  58748.77  58665.82  88536.23
 
 
 
-\begin{center} \textbf{Contributions} \end{center}
-
-Theophilus Anim Bediako : missing value estimation, harmonic model and compilation of the paper
-
-Michael Abalo : built arma model, arima model
-
-Schuylar Harris Donovan : garch model, sarima model
 
 \clearpage
 
