@@ -1,0 +1,384 @@
+---
+title: "Time Series Analysis: Final project"
+fontsize: 11pt
+author: " Group Members: Schuylar Harris Donovan, Michael Abalo,\ Theophilus Anim Bediako"
+date: "December 11, 2022"
+output:
+  bookdown::pdf_document2:
+    latex_engine: xelatex
+    fig_caption: true
+    highlight: pygments
+    keep_tex: yes
+    number_sections: no
+    toc: no
+header-includes: 
+  - \usepackage{float}
+  - \usepackage{longtable}
+  - \usepackage{titling}
+  - \pagenumbering{gobble}
+  - \usepackage{setspace}
+    \onehalfspacing
+    \pretitle{\begin{center}
+      \includegraphics[width=2in,height=3in]{SDSU.png}\LARGE\\}
+---
+
+\newpage
+\pagenumbering{arabic}
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_knit$set(eval.after = "fig.cap")
+```
+
+
+```{r, include=F}
+library("readxl")
+library("knitr")
+library("kableExtra")
+library("imputeTS")
+library("tseries")
+```
+
+
+
+
+## 
+
+\begin{center} \textbf{Exploring Different Time Series Models} \end{center}
+
+In this project, we explore different time series models using data from the National Oceanic and Atmospheric Administration (NOAA). The data shows records on snow depth, precipitation, snowfall etc  from one of the testing locations in South Dakota from 1990-01-01 to 2012-12-31. We chose the maximum temperature variable to perform a univariate time series analysis since that had a few missing records as compared to the other five numeric variables. Out of the 8035 days within this period, the data only has 7763 records. We examined the missing records and found the missigness to be due to randomness(refer to Table \@ref(tab:A) and Table \@ref(tab:B)). To impute the missing records, we relied on the Missing Value Imputation by Kalman Smoothing and State Space Models (na_kalman) function within the imputeTS library. This is an algorithm for estimating a missing time series value based on available data up to time, t via the Kalman filter [1] and [2]. The Kalman filter relies on a series of mathematical models to estimate the next missing series as $\Large{x_{t+1} = Ta_t + K_t(y_t - Za_t)}$. An extensive interpretation of this model can be seen in [2] and [3]. 
+
+We begin the analysis by looking at the time series plot of the maximum temperature series(has 8035 records now). From Figure \@ref(fig:C), the series reveals an erratic pattern throughout the years, a behavior that is common to temperature series. The erratic pattern is due to the seasonal effect in the series.  The time series plot does not reveal any increasing trend. The results can be seen in the decomposition plot.  This clearly suggests an additive model of the form in equation \@ref(eq:Add) may be appropriate for the series, where $\Large{s_t}$ is the seasonal effect,  $\Large{m_t}$ is the trend  and  $\Large{z_t}$ is the error term [4]. \begin{equation}(\#eq:Add) \Large{x_t = m_t + s_t +z_t} \end{equation} 
+ 
+The first model we considered is the harmonic model. We fitted an initial harmonic model with 6 cycles to the series. A harmonic model is able to account for smooth variation in the seasonal effects. A t-ratio at an approximate 5% significant level was used to identify terms with significant coefficients. We defined significant coefficients as having magnitudes of the t-ratio to be at least 3. Eight terms were identified to have significant coefficients. We fitted a new model with only the significant terms. The new harmonic model had a lower Akaike information criterion(AIC) compared to the initial harmonic model. Figure \@ref(fig:E) shows the correlogram  plot of the residuals of the new harmonic model. Clearly, the residuals are not white noise. Hence, the appropriateness of the model is questionable.
+
+The next model we considered is the auto regressive moving average (ARMA) model.  The best-fitting ARMA$\Large{(p, q)}$ is chosen using the smallest AIC by trying a range of combinations of p and q in the arima function with the help of a for loop. The best ARMA model was identified to have $\Large{p, q= 2}$. The correlogram of the residuals of the ARMA$\Large{(2, 0, 2)}$ model were identified to be a realization of white noise. The correlogram of the residuals squared showed similar results.
+
+
+
+\newpage
+
+We further explored the autoregressive integrated moving average ARIMA. The ARIMA $\Large{(p, d, q)}$ process was fitted to the maximum temperature series using the arima function in R. Several $\Large{p, d, q}$ values with an upper bound of 1 were tried with the help of a for loop. We identified an ARIMA$\Large{(1, 1, 1)}$ model to be the one with the lowest AIC. The correlogram of the residuals of the best-fitting model does not differ from white noise. The correlogram of the squared residuals also appear to be a realization of white noise.
+
+The fourth model we considered is the seasonal ARIMA model or the SARIMA model. This model is an extension of the ARIMA model. The model incorporates the seasonal components that is not considered in the regular ARIMA model. According to [4], the seasonal $\Large{(p,d,q)(P,D,Q)}_s$ can be expressed using the backward shift operator as seen in equation \@ref(eq:Sarima)
+\begin{equation}(\#eq:Sarima) \Large{\Theta_P(\mathbf{B}^s)\theta_p(\mathbf{B})(1- \mathbf{B}^s)^{D}(1- \mathbf{B})^dx_t = \Phi_Q(\mathbf{B}^s)\phi_q(\mathbf{B})w_t} \end{equation} 
+where $\Large{\Theta_P, \theta_p, \Phi_Q, \phi_q}$ are polynomials of orders $\Large{P, p, Q}$  and $\Large{q}$ respectively. We specified the conditional sum-of-squares ("CSS") as our fitting method and fitted a range of SARIMA models. The best-fitting SARIMA model selected was the one with the lowest AIC. The order returned from the best fitting model was (0,0,0)(2,0,2). The correlogram of the residuals of the model appear to be a realization of white noise(see Figure \@ref(fig:SAR)).
+
+The last model we considered is the GARCH model. This model is a generalized version of the autoregressive conditional heteroskedastic (ARCH) model. Usually, GARCH models are able to account for volatility in the variance.Based off of the correlograms, the residuals of the GARCH model did not appear to be like white noise. This leads us to believe that this model might not be the best fit.
+
+
+\begin{center} \textbf{Conclusion} \end{center}
+
+To decide on the choice of the best-fitting model, we considered both the correlogram plots and the AICs of the selected models. With the exception of the harmonic and the Garch models, the other models had correlogram plots depicting white noise. The ARMA model produced the least AIC (58627.91) as seen in Table 3. We, therefore, settled on this as our best-fitting model. Our choice of the best model is solely based on correlogram plots and AIC. More extensive approach and model exploration may be required to determine appropriateness of the ARMA model for the maximum temperature series. The final ARMA model is represented in \@ref(eq:Final), where, $\Large{w_t}$ is the white noise.
+\begin{equation}(\#eq:Final) \Large{x_t = 1.4316x_{t-1}   -0.4360x_{t-2} - 0.6715w_{t-1} - 0.1790w_{t-2}} \end{equation} 
+
+In the R markdown file, we made prediction for maximum temperature in 2022 using the best model selected - ARMA(2,0,2).
+
+\clearpage
+
+
+
+
+
+```{r echo=FALSE}
+Ardmore <- read_excel("E:/THEO ANIM/SDSU GRAD SCHOOL/FALL 2022/TIME SERIES ANALYSIS/PROJECT/Ardmore.xlsx")
+
+# all 8035 days
+all.days <- seq(as.Date("1990-01-1"), as.Date("2011-12-31"), by = "days")
+
+
+# convert to character so we are able to compute the missing days
+all.days <- as.character(all.days) # all days
+given.days <- as.character(Ardmore$DATE) # days given in the dataset
+
+
+# missing days
+mis.days <- setdiff(all.days, given.days)
+
+```
+
+```{r A}
+# by looking at the number of missing days by year, we see they are random
+Col.Names1 <- c("Year", "Number of Days")
+knitr::kable(table(format(as.Date(mis.days), format = "%Y")), col.names = Col.Names1, caption = "Number Missing days by years")%>%
+  kable_styling(bootstrap_options = "striped")
+```
+
+
+```{r B, echo = F}
+# by looking at the number of missing days by months, we see they are random
+Col.Names2 <- c("Month", "Number of Days")
+knitr::kable(table(months(as.Date(mis.days))), booktabs = TRUE, col.names = Col.Names2, caption = "Missing days by Months")%>%
+  kable_styling(bootstrap_options = "striped")
+```
+From Table \@ref(tab:A), we found the year 2001 to have 30 days with no records. 2011 had 120 missing records. Similarly, Table \@ref(tab:B) shows missing days aggregated by months from 1991 to 2011. April had 30 days with no records. October has 32 missing records.
+
+
+
+```{r, include=F}
+# given days and maximum temperature data
+max.temp1 <- data.frame(given.days, Ardmore$TMAX)
+
+# new temperature with all the 8035 days
+max.temp2 <- data.frame(all.days)
+
+# merge the two max.temp1 and max.temp2 on date to get all the dates
+new.ardmore <- merge(max.temp2, max.temp1, by.x = "all.days", by.y = "given.days", all.x = T)
+
+
+# 291 NA in all
+
+# compute missing NAs using na_kalman function
+
+Max.Temp.impt <- na_kalman(new.ardmore$Ardmore.TMAX)
+
+# you can print this and compare to the original Max temp, the original data remains the same with the NAs replaced
+```
+
+
+```{r, include=F}
+# convert to time series data
+Max.Temp.ts <- ts(Max.Temp.impt, start = c(1990, 1, 1), frequency = 365)
+```
+
+
+
+```{r C, fig.cap = "Time Series Plot of the Maximum Temperature"}
+# get Ts plot
+
+ts.plot(Max.Temp.ts, ylab = "Maximum Temperature")
+```
+
+
+```{r D, include = F, fig.cap = "Decomposition Plot"}
+plot(decompose(Max.Temp.ts))
+```
+
+
+
+```{r, include=F}
+# Harmonic Model
+SIN <- COS <- matrix(nr = length(Max.Temp.ts), nc = 6)
+for (i in 1:6) {
+  COS[, i] <- cos(2 * pi * i * time(Max.Temp.ts))
+  SIN[, i] <- sin(2 * pi * i * time(Max.Temp.ts))
+}
+
+
+# find the standardize the Time Variable to reduce the computation errors due to large numbers
+TIME <- (time(Max.Temp.ts) - mean(time(Max.Temp.ts))) / sd(time(Max.Temp.ts))
+
+
+
+# build model and select significant coefficients
+
+x.lm1 <- lm(Max.Temp.ts ~ TIME + I(TIME^2) + COS[, 1] + SIN[, 1] +
+  COS[, 2] + SIN[, 2] + COS[, 3] + SIN[, 3] + COS[, 4] +
+  SIN[, 4] + COS[, 5] + SIN[, 5] + COS[, 6] + SIN[, 6])
+
+# x.lm1$coefficients
+
+# check significant coefficients ~ has abs values greater than 3
+coef(x.lm1) / sqrt(diag(vcov(x.lm1)))
+
+# four significant variables
+x.lm2 <- lm(Max.Temp.ts ~  I(TIME^2) + COS[, 1] + SIN[, 1] + COS[, 2] + SIN[, 2] + SIN[, 3] + SIN[, 5] + SIN[, 6])
+AIC(x.lm1)
+AIC(x.lm2)
+```
+
+
+```{r E, fig.cap= "Correlogram Plot of the Residuals of the best-fitting harmonic model"}
+acf(x.lm2$residuals, main = "") # reveals residuals are not white noise, model cannot be trusted
+harmonic.mod <- x.lm2
+```
+
+
+```{r F,include=F, fig.cap= "Correlogram plot"}
+
+# next we tried an ARMA model
+
+aic.stor <- NULL
+for (i in 0:2) {
+  for (j in 0:2) {
+    for (k in 0:2) {
+      aic.temp <- AIC(arima(Max.Temp.ts,
+        order = c(i, j, k)
+      ))
+
+      aic.stor <- rbind(aic.stor, cbind(i, j, k, aic.temp))
+    }
+  }
+}
+
+#the best ARMA model has p and p equals 4.
+which.min(aic.stor[, 4])
+
+
+best.arma <- arima(Max.Temp.ts,
+  order = c(2, 0, 2)
+)
+
+
+best.arma
+```
+
+```{r ARMA, fig.cap = "Correlogram of the Residuals of the best-fitting ARMA model"}
+# The residuals for the ARMA model also appear to look like white noise.
+acf(resid(best.arma), main = "")
+
+
+```
+
+```{r G, include = F, fig.cap = "Correlogram of the Residuals Squared"}
+acf(resid(best.arma)^2, main = "")
+```
+
+```{r, include=F}
+# The next was ARIMA model
+
+aic.stor <- NULL
+for (i in 0:1) {
+  for (j in 0:1) {
+    for (k in 0:1) {
+      aic.temp <- AIC(arima(Max.Temp.ts,
+        order = c(i, j, k)
+      ))
+      aic.stor <- rbind(aic.stor, cbind(i, j, k, aic.temp))
+    }
+  }
+}
+
+which.min(aic.stor[, 4]) # the eighth row has the least aic
+
+
+
+# The best model ARIMA model has order 1,1,1
+
+best.arima <- arima(Max.Temp.ts, order = c(1, 1, 1))
+
+# From the residuals, it does look like the residuals are white noise. The squared residuals also appear to behave like white noise, although there is a bit of a pattern. That could point to a seasonality trend present.
+acf(resid(best.arima))
+acf(resid(best.arima)^2)
+
+best.arima$coef
+```
+
+
+```{r, include=F}
+# The next model we fit was a seasonal arima (SARIMA) model using the get.best.arima function.
+
+get.best.arima <- function(x.ts, maxord = c(1, 1, 1, 1, 1, 1)) {
+  best.aic <- 1e8
+  n <- length(x.ts)
+  for (p in 0:maxord[1]) {
+    for (d in 0:maxord[2]) {
+      for (q in 0:maxord[3]) {
+        for (P in 0:maxord[4]) {
+          for (D in 0:maxord[5]) {
+            for (Q in 0:maxord[6])
+            {
+              fit <- arima(x.ts,
+                order = c(p, d, q),
+                seas = list(
+                  order = c(P, D, Q),
+                  frequency(x.ts)
+                ), method = "CSS"
+              )
+              fit.aic <- -2 * fit$loglik + (log(n) + 1) * length(fit$coef)
+              if (fit.aic < best.aic) {
+                best.aic <- fit.aic
+                best.fit <- fit
+                best.model <- c(p, d, q, P, D, Q)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  list(best.aic, best.fit, best.model)
+}
+
+best.sarima3 <- get.best.arima(as.numeric(Max.Temp.ts), maxord = c(2, 2, 2, 2, 2, 2))
+best.sarima3
+# The order returned from the best fitting model was (0,0,0)(2,0,2).
+```
+
+```{r SAR, fig.cap = "Correlogram of the residuals from the best-fitting SARIMA model"}
+#correlogram analysis
+acf(resid(best.sarima3[[2]]), main = "")
+```
+
+```{r, include=F}
+#check the residuals squared
+acf(resid(best.sarima3[[2]])^2)
+# The correlograms from the SARIMA look a little more like white noise. This model may be a better fit than the GARCH model.
+```
+
+
+```{r, include = F}
+# first model is the GARCH model
+garch.mod <- garch(Max.Temp.ts, trace = F)
+garch.res <- garch.mod$residuals[-1]
+
+# Based off of the correlograms, the residuals of the GARCH don't quite behave like white noise. This leads us to believe that this model might not be the best fit.
+
+acf(garch.res)
+
+acf(garch.res^2)
+```
+
+
+
+
+
+
+
+
+
+
+```{r, include=F}
+# AIC comparison
+
+list(Harmonic = AIC(harmonic.mod), ARMA = AIC(best.arma), ARIMA = AIC(best.arima), SARIMA = best.sarima3[[1]], Garch = AIC(garch.mod))
+
+#predict 2022 records
+max.temp.2012 <- predict(best.arma, n.ahead = 365)
+```
+
+
+
+
+\clearpage
+
+Table 3: AIC Comparison
+
+Model    Harmonic     ARMA      ARIMA     SARIMA    GARCH
+------- ----------  ---------- --------  --------- ---------
+AIC      63450.92    58627.91  58748.77  58665.82  88536.23
+------   -------   ---------  ---------  -------- ---------
+
+
+
+\begin{center} \textbf{Contributions} \end{center}
+
+Theophilus Anim Bediako : missing value estimation, harmonic model and compilation of the paper
+
+Michael Abalo : built arma model, arima model
+
+Schuylar Harris Donovan : garch model, sarima model
+
+\clearpage
+
+
+### Reference
+
+\begin{enumerate}
+\item Bishop, G., \& Welch, G. (2001). An introduction to the kalman filter. Proc of SIGGRAPH, Course, 8(27599-23175), 41
+\item Durbin,J., \& Koopman, S. J. (2002). A simple and efficient simulation smoother for state space time series analysis. Biometrika, 89(3), 603-616
+\item https://www.econ.cam.ac.uk/people-files/faculty/mw217/pdf/mispapnw.pdf
+\item{https://stats.stackexchange.com/questions/140990/using-kalman-filters-to-impute-missing-values-in-time-series}
+\item{Metcalfe, A. V., \& Cowpertwait, P. S. (2009). Introductory time series with R. Springer-Verlag New York.}
+\end{enumerate}
