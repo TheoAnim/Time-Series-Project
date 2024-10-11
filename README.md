@@ -10,4 +10,6 @@ The first model we considered is the harmonic model. We fitted an initial harmon
 
 The next model we considered is the auto regressive moving average (ARMA) model.  The best-fitting ARMA $(p, q)$ is chosen using the smallest AIC by trying a range of combinations of p and q in the arima function. The best ARMA model was identified to have $p, q= 2$. The correlogram of the residuals of the ARMA $(2, 0, 2)$ model were identified to be a realization of white noise. The correlogram of the residuals squared showed similar results.
 
+Other time series model were considered and the "best model" was selected as the one with the smallest AIC and the appropriate correlogram plot 
+
 
